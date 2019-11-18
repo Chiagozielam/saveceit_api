@@ -4,22 +4,31 @@ const mongoose = require("mongoose")
 const profileSchema = new mongoose.Schema({
     profileName: {
         type: String,
-        required: true
+        required: false,
+        default: "username"
     },
     profileImg: {
         type: String,
-        require: true
+        require: false,
+        default: "https://cloudinary.com"
     },
     gender: {
         type: String,
-        require: false
+        require: false,
+        default: "unknown"
     },
     company: {
-        type: String
+        type: String,
+        default: "Company Name"
     },
     work: {
-        type: String
+        type: String,
+        default: "Job Title"
     },
+    owner: {
+        type: String,
+        required: true
+    }
 
 })
 

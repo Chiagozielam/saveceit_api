@@ -8,7 +8,7 @@ const receiptSchema = new mongoose.Schema({
     },
     receiptImg: {
         type: Array,
-        require: true
+        required: true
     },
     date: {
         type: String,
