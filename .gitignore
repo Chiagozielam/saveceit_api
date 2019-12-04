@@ -3,3 +3,5 @@
 .env
 /package.json
 /node_modules
+
+/src/app/user/fetcher.js

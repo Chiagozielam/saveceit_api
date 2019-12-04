@@ -6,10 +6,7 @@ const receiptSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    receiptImg: {
-        type: Array,
-        required: true
-    },
+    receiptImg: [{type: String, required: true }],
     date: {
         type: String,
         default: Date.now(),

@@ -7,7 +7,7 @@ import _ from "lodash";
 import { registerValidation, loginValidation } from "./validation";
 import app from "../..";
 import { rejects } from "assert";
-
+import fs from "fs";
 
 // REGISTER A NEW USER
 const userRegister = async (req, res) => {
@@ -92,72 +92,74 @@ const addReceipts = async (req, res) => {
   const cloud_name = "dcft8yhab";
   const api_key = "952961694399734";
   const api_secret = "iRlt9ZFuucvVBAIrqZYpitijsDY";
-
-  console.log(req.files)
   
-  console.log(req.header);
-  // so here's the long process I'm about starting here. The req.body when received, for
-  // some weird reason. comes back as an object that wraps an inner object which is wrapped
-  // in quotes, thus making it a string.
-  // so I got the keys in the object (which is just one) with Object.keys, which would return an array
-  // then I selected the first element from the array, which is my stringed object.
-  // then I parsed my stringed object with JSON.parse() to remove the object from strings and
-  // display it in a json format, so I could now interract with the main object.
-  // I hope I can figure out the problem real soon on my frontend.
+  const saveceitUserId = req.user._id
+  const receiptName = req.body.receiptName
+  console.log(receiptName)
+  let imgArray = [];
 
-  // const keys = Object.keys(req.body);
-  // const obj = keys[0];
-  // const jsonObj = JSON.parse(obj);
-  // const { receiptName, imgFilePaths } = jsonObj;
-
-  // const { receiptName, receiptImg, } = req.body;
+  const { ...rest } = req.files;
+  const files = Object.values(rest);
+  const keys = Object.keys(rest);
+  let keyLength = keys.length;
   // configure our cloudinary
-  // cloudinary.config({
-  //   cloud_name,
-  //   api_key,
-  //   api_secret
-  // });
-  //  let filePaths = imgFilePaths
-  // console.log(filePaths);
-  //  const multipleUpload = new Promise(async(resolve, reject) => {
-  //    let upload_len = filePaths.length
-  //    let upload_res = new Array()
+  cloudinary.config({
+    cloud_name,
+    api_key,
+    api_secret
+  });
+  console.log(files);
+  // let filePaths = imgFilePaths;
+  const multiUpload = async () => {
+    for(let i=0; i <= keyLength - 1; i ++){
+      let file = files[i];
+      console.log(file)
+      const path = `${__dirname}/../../temp/${file.name}`;
 
-  //    for(let i = 0; i <=upload_len + 1; i++ ){
-  //      let filePath = filePaths[i];
-  //      await cloudinary.v2.uploader.upload(filePath, (error, result) => {
-  //        if(upload_res.length === upload_len){
-  //         // resolve promise after upload is complete
-  //         resolve(upload_res)
-  //        }else if(result){
-  //         // push public_ids in an array 
-  //         upload_res.push(result.public_id);
-  //        }else if(error){
-  //          console.log(error);
-  //          reject(error)
-  //        }
-  //      })
-  //    }
-  //  })
-  //  .then( result => result)
-  //  .catch(error => console.log(error))
-  //  const upload = await multipleUpload;
-  //  console.log(upload)
+      //temporary store file on the server
+      file.mv(path, err => {
+        if(err){
+          console.log(`error moving file: ${err}`)
+          return
+        }
+      });
+      // upload files to cloudinary
 
-  // const userId = req.user._id;
-  // const receiptData = {
-  //   receiptName,
-  //   receiptImg,
-  //   owner: userId
-  // };
-  // const newItem = new Receipt(receiptData);
-  // try {
-  //   const saveItem = await newItem.save();
-  //   console.log(saveItem);
-  //   res.send(saveItem);
-  // } catch (err) {
-  //   console.log(err);
-  // }
+      const res = cloudinary.v2.uploader.upload(path, {
+        folder: `/receipts/`,
+        use_filename: true
+      });
+      await res.then( data => {
+        console.log(`success uploading files to cloudinary`)
+        // remove stored file and return upload result
+        fs.unlink(path, err => {
+          if (err) return reject(err);
+        });
+        const imgUrl = data.secure_url
+        imgArray = [...imgArray, imgUrl]
+      }).catch( err => console.log(err))
+    }
+    const receiptFile = {
+      receiptName,
+      recieptImg: imgArray,
+      owner: saveceitUserId
+    }
+    console.log(receiptFile)
+    const newReceipt = new Receipt(receiptFile)
+    console.log(newReceipt);
+    try{
+      const saveReceipt = await newReceipt.save();
+      if(saveReceipt){
+        console.log("New Receipt has successfully been saved")
+        res.send("New Receipt has successfully been saved");
+      }
+    }catch(err){
+      console.log("Unsuccessful saving receipt to database")
+    }
+
+  }
+  multiUpload()
+  
 };
 
 // -----------THIS SECTION IS FOR VIEWNIG ALL PRODUCTS ADDED BY A USER-----------------
