@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 mongoose
-  .connect(process.env.DB_CONNECT, { useNewUrlParser: true })
+  .connect(process.env.DB_CONNECT_PROD, { useNewUrlParser: true })
   .then(() => console.log("Db connection successful!"))
   .catch(err => console.log(err));
 
