@@ -1,13 +1,12 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
-import cloudinary from "cloudinary";
-import _ from "lodash";
-import { Receipt, Profile, User } from "../../database";
-import { registerValidation, loginValidation } from "./validation";
-import app from "../..";
-import { rejects } from "assert";
-import fs from "fs";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import cloudinary from 'cloudinary';
+// eslint-disable-next-line no-unused-vars
+import _ from 'lodash';
+import fs from 'fs';
+import { Receipt, Profile, User } from '../../database';
+import { registerValidation, loginValidation } from './validation';
 
 // REGISTER A NEW USER
 const userRegister = async (req, res) => {
@@ -25,13 +24,18 @@ const userRegister = async (req, res) => {
   const hashPassword = await bcrypt.hash(req.body.password, salt);
 
   // Create new User
-  const { firstname, lastname, email, phoneNumber } = req.body;
+  const {
+    firstname,
+    lastname,
+    email,
+    phoneNumber,
+  } = req.body;
   const newUser = new User({
     firstname,
     lastname,
     email,
     phoneNumber,
-    password: hashPassword
+    password: hashPassword,
   });
   try {
     const saveUser = await newUser.save();
@@ -39,11 +43,11 @@ const userRegister = async (req, res) => {
       // Create and assign a token
       const token = jwt.sign(
         { _id: saveUser._id, email: saveUser.email },
-        process.env.USER_TOKEN_SECRET
+        process.env.USER_TOKEN_SECRET,
       );
       res.send(token);
       // Create user profile
-      const fullname = firstname + " " + lastname;
+      const fullname = `${firstname} ${lastname}`;
       const newUserProfile = new Profile({
         profileName: fullname,
         owner: saveUser._id
@@ -67,31 +71,31 @@ const userLogin = async (req, res) => {
   // VALIDATE THE DATA BEFORE LOGIN
   const { error } = loginValidation(req.body);
   if (error) return res.status(400).send(error.details[0].message);
-  //Check if user already exists
+  // Check if user already exists
   const user = await User.findOne({ email: req.body.email });
   if (!user) {
-    return res.status(400).send("The Email does not match any current user");
+    return res.status(400).send('The Email does not match any current user');
   }
   // Check if pasword is correct
   const validPass = await bcrypt.compare(req.body.password, user.password);
   if (!validPass) {
-    return res.status(400).send("The Password is incorrect");
+    return res.status(400).send('The Password is incorrect');
   }
 
-  //Create and assign a token
+  // Create and assign a token
   const token = jwt.sign(
     { _id: user._id, email: user.email },
     process.env.USER_TOKEN_SECRET
   );
-  res.header("user-token", token).send(token);
+  res.header('user-token', token).send(token);
 };
 
-//----------- HERE WE ENABLE USERS ADD RECEIPTS AS COLLECTIONS
+// ----------- HERE WE ENABLE USERS ADD RECEIPTS AS COLLECTIONS
 
 const addReceipts = async (req, res) => {
-  const cloud_name = "dcft8yhab";
-  const api_key = "952961694399734";
-  const api_secret = "iRlt9ZFuucvVBAIrqZYpitijsDY";
+  const cloud_name = 'dcft8yhab';
+  const api_key = '952961694399734';
+  const api_secret = 'iRlt9ZFuucvVBAIrqZYpitijsDY';
 
   const saveceitUserId = req.user._id;
   const receiptName = req.body.receiptName;
@@ -101,23 +105,23 @@ const addReceipts = async (req, res) => {
   const { ...rest } = req.files;
   const files = Object.values(rest);
   const keys = Object.keys(rest);
-  let keyLength = keys.length;
+  const keyLength = keys.length;
   // configure our cloudinary
   cloudinary.config({
     cloud_name,
     api_key,
-    api_secret
+    api_secret,
   });
   console.log(files);
   // let filePaths = imgFilePaths;
   const multiUpload = async () => {
-    for (let i = 0; i <= keyLength - 1; i++) {
+    for (let i = 0; i <= keyLength - 1; i += 1) {
       let file = files[i];
       console.log(file);
       const path = `${__dirname}/../../temp/${file.name}`;
 
-      //temporary store file on the server
-      file.mv(path, err => {
+      // temporary store file on the server
+      file.mv(path, (err) => {
         if (err) {
           console.log(`error moving file: ${err}`);
           return;
@@ -126,15 +130,15 @@ const addReceipts = async (req, res) => {
       // upload files to cloudinary
 
       const res = cloudinary.v2.uploader.upload(path, {
-        folder: `/receipts/`,
-        use_filename: true
+        folder: '/receipts/',
+        use_filename: true,
       });
       await res
         .then(data => {
           console.log(`success uploading files to cloudinary`);
           // remove stored file and return upload result
           fs.unlink(path, err => {
-            if (err) return reject(err);
+            if (err) return err;
           });
           const imgUrl = data.secure_url;
           imgArray = [...imgArray, imgUrl];
@@ -152,11 +156,11 @@ const addReceipts = async (req, res) => {
     try {
       const saveReceipt = await newReceipt.save();
       if (saveReceipt) {
-        console.log("New Receipt has successfully been saved");
-        res.send("New Receipt has successfully been saved");
+        console.log('New Receipt has successfully been saved');
+        res.send('New Receipt has successfully been saved');
       }
     } catch (err) {
-      console.log("Unsuccessful saving receipt to database");
+      console.log('Unsuccessful saving receipt to database');
     }
   };
   multiUpload();
@@ -222,7 +226,7 @@ const updateProfileName = async (req, res) => {
   try {
     const updateName = await Profile.update(
       { owner: ownerId },
-      { $set: { profileName: profileName } }
+      { $set: { profileName } },
     );
     if (updateName) {
       const profile = await Profile.find({ owner: ownerId });
