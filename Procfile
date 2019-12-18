@@ -1,1 +1,0 @@
-web: babel server.js
